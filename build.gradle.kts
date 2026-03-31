@@ -3,7 +3,7 @@ plugins {
     alias(libs.plugins.maven.publish)
 }
 
-group = "us.ascendtech"
+group = "us.ascend-tech"
 
 defaultTasks("buildNative", "build")
 

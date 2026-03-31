@@ -17,8 +17,8 @@ Add the API JAR and your platform's native JAR:
 
 ```kotlin
 dependencies {
-    implementation("us.ascendtech:primme-ffm-java:VERSION")
-    implementation("us.ascendtech:primme-ffm-java:VERSION:linux-x86_64")
+    implementation("us.ascend-tech:primme-ffm-java:VERSION")
+    implementation("us.ascend-tech:primme-ffm-java:VERSION:linux-x86_64")
 }
 ```
 
@@ -26,12 +26,12 @@ dependencies {
 
 ```xml
 <dependency>
-    <groupId>us.ascendtech</groupId>
+    <groupId>us.ascend-tech</groupId>
     <artifactId>primme-ffm-java</artifactId>
     <version>VERSION</version>
 </dependency>
 <dependency>
-    <groupId>us.ascendtech</groupId>
+    <groupId>us.ascend-tech</groupId>
     <artifactId>primme-ffm-java</artifactId>
     <version>VERSION</version>
     <classifier>linux-x86_64</classifier>
