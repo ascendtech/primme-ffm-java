@@ -1,0 +1,135 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ '*.*.*' ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  build-native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux-x86_64
+          - os: ubuntu-24.04-arm
+            platform: linux-aarch64
+          - os: macos-latest
+            platform: macos-aarch64
+          - os: windows-latest
+            platform: windows-x86_64
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y build-essential
+
+      - name: Setup MSYS2 (Windows)
+        if: runner.os == 'Windows'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          install: mingw-w64-x86_64-gcc mingw-w64-x86_64-gcc-fortran mingw-w64-x86_64-openblas mingw-w64-x86_64-make git
+          update: false
+
+      - name: Build native library (Unix)
+        if: runner.os != 'Windows'
+        run: ./build-native.sh
+
+      - name: Build native library (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: ./build-native.sh
+
+      - name: Verify dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          echo "Dependencies:"
+          ldd src/main/resources/native/${{ matrix.platform }}/*
+          ! ldd src/main/resources/native/${{ matrix.platform }}/* | grep -qE 'libgfortran|libopenblas|liblapack|libblas'
+
+      - name: Verify dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: otool -L src/main/resources/native/${{ matrix.platform }}/*
+
+      - name: Verify dependencies (Windows)
+        if: runner.os == 'Windows'
+        shell: msys2 {0}
+        run: |
+          echo "Dependencies:"
+          objdump -p src/main/resources/native/${{ matrix.platform }}/* | grep "DLL Name"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Test on platform
+        timeout-minutes: 5
+        run: ./gradlew test
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ matrix.platform }}
+          path: src/main/resources/native/
+
+  build:
+    needs: build-native
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: native-*
+          path: src/main/resources/native/
+          merge-multiple: true
+
+      - name: Verify all platforms present
+        run: |
+          for p in linux-x86_64 linux-aarch64 macos-aarch64 windows-x86_64; do
+            ls -lh src/main/resources/native/$p/ || { echo "Missing $p"; exit 1; }
+          done
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build and test
+        run: ./gradlew build
+
+      - name: Build all JARs
+        run: |
+          ./gradlew jar nativeJar-linux-x86_64 nativeJar-linux-aarch64 \
+            nativeJar-macos-aarch64 nativeJar-windows-x86_64
+          echo "=== Built JARs ==="
+          ls -lh build/libs/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: primme-ffm-java-jars
+          path: build/libs/*.jar
+
+      - name: Publish to Maven Central
+        if: startsWith(github.ref, 'refs/tags/')
+        run: ./gradlew publishAllPublicationsToMavenCentralRepository
+        env:
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyId: ${{ secrets.GPG_KEY_ID }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_PRIVATE_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_PASSWORD }}
