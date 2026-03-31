@@ -35,7 +35,11 @@ MAKE=make
 if [ "$PLATFORM_OS" = "windows" ]; then
     MAKE=mingw32-make
 fi
-$MAKE lib PRIMME_WITH_HALF=no PRIMME_WITH_FLOAT=no CFLAGS="-O2 -fPIC"
+if [ "$PLATFORM_OS" = "windows" ]; then
+    $MAKE lib PRIMME_WITH_HALF=no PRIMME_WITH_FLOAT=no CFLAGS="-O2" SHELL=bash
+else
+    $MAKE lib PRIMME_WITH_HALF=no PRIMME_WITH_FLOAT=no CFLAGS="-O2 -fPIC"
+fi
 
 # Link shared library
 OUTPUT_DIR="$SCRIPT_DIR/src/main/resources/native/$PLATFORM"
