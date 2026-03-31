@@ -86,7 +86,7 @@ else
         git clone --depth 1 --branch v0.3.32 https://github.com/OpenMathLib/OpenBLAS.git "$WORK/openblas"
     fi
     cd "$WORK/openblas"
-    OPENBLAS_OPTS="USE_THREAD=0 USE_OPENMP=0 NOFORTRAN=1 C_LAPACK=1"
+    OPENBLAS_OPTS="USE_THREAD=0 USE_OPENMP=0 NOFORTRAN=1 C_LAPACK=1 DYNAMIC_ARCH=1"
     if [ "$PLATFORM_ARCH" = "aarch64" ]; then
         OPENBLAS_OPTS="$OPENBLAS_OPTS TARGET=ARMV8"
     fi
