@@ -1,6 +1,6 @@
 [versions]
 junit = "5.14.3"
-maven-publish = "0.30.0"
+maven-publish = "0.36.0"
 
 [plugins]
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "maven-publish" }

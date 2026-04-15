@@ -41,7 +41,7 @@ val nativeJarTasks = platforms.map { platform ->
 
 // ── Maven Central Publishing ───────────────────────────────────────
 mavenPublishing {
-    publishToMavenCentral(com.vanniktech.maven.publish.SonatypeHost.CENTRAL_PORTAL, automaticRelease = true)
+    publishToMavenCentral(automaticRelease = true)
     signAllPublications()
 
     coordinates(group.toString(), "primme-ffm-java", version.toString())
